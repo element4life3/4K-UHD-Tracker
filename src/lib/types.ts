@@ -38,4 +38,4 @@ export type ReleaseStatus = 'out-now' | 'this-week' | 'coming-soon' | 'upcoming'
 
 export type SortOption = 'date-asc' | 'date-desc' | 'title-asc' | 'title-desc';
 
-export type FilterStatus = 'all' | 'all-upcoming' | ReleaseStatus;
+export type FilterStatus = 'all' | 'all-upcoming' | 'newly-added' | ReleaseStatus;

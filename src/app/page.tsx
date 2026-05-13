@@ -1,11 +1,10 @@
 'use client';
 
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import type { Release, FilterStatus, SortOption } from '@/lib/types';
 import ReleaseCard from '@/components/ReleaseCard';
 import SkeletonCard from '@/components/SkeletonCard';
 import FilterBar from '@/components/FilterBar';
-import SearchBar from '@/components/SearchBar';
 
 export default function Home() {
   const [releases, setReleases] = useState<Release[]>([]);
@@ -15,10 +14,8 @@ export default function Home() {
   const [filter, setFilter] = useState<FilterStatus>('all-upcoming');
   const [sort, setSort] = useState<SortOption>('date-asc');
   const [month, setMonth] = useState('all');
-  const [newReleases, setNewReleases] = useState<Release[]>([]);
-  const [showNewBanner, setShowNewBanner] = useState(false);
+  const [newReleaseIds, setNewReleaseIds] = useState<Set<string>>(new Set());
   const [edition, setEdition] = useState('all');
-  const [filteredNewIds, setFilteredNewIds] = useState<Set<string> | null>(null);
 
   const handleMonthChange = (newMonth: string) => {
     setMonth(newMonth);
@@ -44,27 +41,28 @@ export default function Home() {
     fetchReleases();
   }, []);
 
-  // Detect new releases based on localStorage timestamp — only on initial load
-  const [bannerChecked, setBannerChecked] = useState(false);
+  // Compare against localStorage timestamp once after data loads to identify
+  // releases added since the user's last visit. The lastSeen value is captured
+  // at page load (then immediately reset to now), so the set stays stable for
+  // this session even if the user clicks Newly Added later.
+  const [newSetComputed, setNewSetComputed] = useState(false);
   useEffect(() => {
-    if (releases.length === 0 || bannerChecked) return;
-    setBannerChecked(true);
+    if (releases.length === 0 || newSetComputed) return;
+    setNewSetComputed(true);
 
     const STORAGE_KEY = '4k-tracker-last-seen';
     const lastSeen = localStorage.getItem(STORAGE_KEY);
 
     if (lastSeen) {
       const lastSeenTime = new Date(lastSeen).getTime();
-      const newOnes = releases.filter(r => new Date(r.addedAt).getTime() > lastSeenTime);
-      if (newOnes.length > 0) {
-        setNewReleases(newOnes);
-        setShowNewBanner(true);
-      }
+      const ids = new Set(
+        releases.filter(r => new Date(r.addedAt).getTime() > lastSeenTime).map(r => r.id)
+      );
+      setNewReleaseIds(ids);
     }
 
-    // Update last seen to now
     localStorage.setItem(STORAGE_KEY, new Date().toISOString());
-  }, [releases, bannerChecked]);
+  }, [releases, newSetComputed]);
 
   async function fetchReleases() {
     try {
@@ -98,39 +96,30 @@ export default function Home() {
   const filtered = useMemo(() => {
     let result = [...releases];
 
-    // Filter by new release IDs (from banner click)
-    if (filteredNewIds) {
-      result = result.filter(r => filteredNewIds.has(r.id));
-      // Skip other filters when showing new releases
-    } else {
-      // Filter by month
-      if (month !== 'all') {
-        result = result.filter(r => r.releaseDate.startsWith(month));
-      }
-
-      // Search
-      if (search) {
-        const q = search.toLowerCase();
-        result = result.filter(
-          r => r.title.toLowerCase().includes(q) || r.studio.toLowerCase().includes(q)
-        );
-      }
-
-      // Filter by status
-      if (filter === 'all-upcoming') {
-        const today = new Date().toISOString().split('T')[0];
-        result = result.filter(r => r.releaseDate >= today);
-      } else if (filter !== 'all') {
-        result = result.filter(r => r.status === filter);
-      }
-
-      // Filter by edition
-      if (edition !== 'all') {
-        result = result.filter(r => r.edition === edition);
-      }
+    if (month !== 'all') {
+      result = result.filter(r => r.releaseDate.startsWith(month));
     }
 
-    // Sort
+    if (search) {
+      const q = search.toLowerCase();
+      result = result.filter(
+        r => r.title.toLowerCase().includes(q) || r.studio.toLowerCase().includes(q)
+      );
+    }
+
+    if (filter === 'all-upcoming') {
+      const today = new Date().toISOString().split('T')[0];
+      result = result.filter(r => r.releaseDate >= today);
+    } else if (filter === 'newly-added') {
+      result = result.filter(r => newReleaseIds.has(r.id));
+    } else if (filter !== 'all') {
+      result = result.filter(r => r.status === filter);
+    }
+
+    if (edition !== 'all') {
+      result = result.filter(r => r.edition === edition);
+    }
+
     result.sort((a, b) => {
       switch (sort) {
         case 'date-asc':
@@ -147,15 +136,7 @@ export default function Home() {
     });
 
     return result;
-  }, [releases, search, filter, sort, month, edition, filteredNewIds]);
-
-  const handleNewBannerClick = useCallback(() => {
-    setSearch('');
-    setFilter('all');
-    setMonth('all');
-    setShowNewBanner(false);
-    setFilteredNewIds(new Set(newReleases.map(r => r.id)));
-  }, [newReleases]);
+  }, [releases, search, filter, sort, month, edition, newReleaseIds]);
 
   const formattedLastUpdated = lastUpdated
     ? new Date(lastUpdated).toLocaleString('en-US', {
@@ -211,65 +192,21 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
-        {/* New Releases Banner */}
-        {showNewBanner && newReleases.length > 0 && (
-          <div className="animate-slide-down animate-pulse-glow flex items-center justify-between bg-[#4da6ff]/10 border border-[#4da6ff]/30 rounded-xl px-4 py-3">
-            <button
-              onClick={handleNewBannerClick}
-              className="flex items-center gap-3 text-sm cursor-pointer"
-            >
-              <span className="text-lg">🎬</span>
-              <span className="text-[#4da6ff] font-semibold">
-                {newReleases.length} new {newReleases.length === 1 ? 'release' : 'releases'} added
-              </span>
-              {newReleases.length <= 3 && (
-                <span className="text-gray-400">
-                  — {newReleases.map(r => r.title).join(', ')}
-                </span>
-              )}
-              <span className="text-gray-500 text-xs ml-1">Click to view</span>
-            </button>
-            <button
-              onClick={() => setShowNewBanner(false)}
-              className="text-gray-500 hover:text-white p-1 cursor-pointer"
-            >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-        )}
-
-        {/* Showing new releases indicator */}
-        {filteredNewIds && (
-          <div className="flex items-center justify-between bg-[#12131a] border border-[#1e2030] rounded-lg px-4 py-2">
-            <span className="text-sm text-gray-400">
-              Showing {filteredNewIds.size} newly added {filteredNewIds.size === 1 ? 'release' : 'releases'}
-            </span>
-            <button
-              onClick={() => setFilteredNewIds(null)}
-              className="text-[#4da6ff] text-sm hover:underline cursor-pointer"
-            >
-              Show all releases
-            </button>
-          </div>
-        )}
-
-        {/* Search */}
-        <SearchBar value={search} onChange={(v) => { setSearch(v); setFilteredNewIds(null); }} />
-
-        {/* Filters */}
+        {/* Search + Filters */}
         <FilterBar
           filter={filter}
           sort={sort}
           month={month}
           edition={edition}
+          search={search}
+          newCount={newReleaseIds.size}
           availableMonths={availableMonths}
           availableEditions={availableEditions}
-          onFilterChange={(f) => { setFilter(f); setFilteredNewIds(null); }}
+          onFilterChange={setFilter}
           onSortChange={setSort}
-          onMonthChange={(m) => { handleMonthChange(m); setFilteredNewIds(null); }}
-          onEditionChange={(e) => { setEdition(e); setFilteredNewIds(null); }}
+          onMonthChange={handleMonthChange}
+          onEditionChange={setEdition}
+          onSearchChange={setSearch}
         />
 
         {/* Stats */}
