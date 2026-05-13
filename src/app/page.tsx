@@ -10,7 +10,6 @@ import SearchBar from '@/components/SearchBar';
 export default function Home() {
   const [releases, setReleases] = useState<Release[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState<FilterStatus>('all-upcoming');
@@ -69,7 +68,7 @@ export default function Home() {
 
   async function fetchReleases() {
     try {
-      const res = await fetch('/api/releases');
+      const res = await fetch('/releases.json');
       const data = await res.json();
       setReleases(data.releases || []);
       setLastUpdated(data.lastUpdated);
@@ -77,22 +76,6 @@ export default function Home() {
       console.error('Failed to fetch releases:', err);
     } finally {
       setLoading(false);
-    }
-  }
-
-  async function handleRefresh() {
-    setRefreshing(true);
-    try {
-      const res = await fetch('/api/refresh', { method: 'POST' });
-      const data = await res.json();
-      if (data.success) {
-        setLastUpdated(data.lastUpdated);
-        await fetchReleases();
-      }
-    } catch (err) {
-      console.error('Failed to refresh:', err);
-    } finally {
-      setRefreshing(false);
     }
   }
 
@@ -217,33 +200,11 @@ export default function Home() {
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
-              {formattedLastUpdated && (
-                <span className="text-xs text-gray-500 hidden sm:block">
-                  Updated: {formattedLastUpdated}
-                </span>
-              )}
-              <button
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="flex items-center gap-2 bg-[#12131a] border border-[#1e2030] hover:border-[#4da6ff]/40 text-gray-300 hover:text-white px-4 py-2 rounded-lg text-sm transition-all disabled:opacity-50 cursor-pointer"
-              >
-                <svg
-                  className={`w-4 h-4 ${refreshing ? 'animate-spin' : ''}`}
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-                  />
-                </svg>
-                {refreshing ? 'Refreshing...' : 'Refresh'}
-              </button>
-            </div>
+            {formattedLastUpdated && (
+              <span className="text-xs text-gray-500 hidden sm:block">
+                Updated: {formattedLastUpdated}
+              </span>
+            )}
           </div>
         </div>
       </header>
@@ -326,13 +287,13 @@ export default function Home() {
 
         {/* Release Grid */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {filtered.map((release) => (
               <ReleaseCard key={release.id} release={release} />
             ))}

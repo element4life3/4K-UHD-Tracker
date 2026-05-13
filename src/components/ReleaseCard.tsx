@@ -39,10 +39,9 @@ export default function ReleaseCard({ release }: { release: Release }) {
 
   const editionColors: Record<string, string> = {
     'SteelBook': 'bg-sky-500/20 text-sky-400 border-sky-500/30',
+    'DigiPack': 'bg-teal-500/20 text-teal-400 border-teal-500/30',
     "Collector's": 'bg-rose-500/20 text-rose-400 border-rose-500/30',
-    'Limited Edition': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-    'Ultimate Edition': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-    'Deluxe Edition': 'bg-pink-500/20 text-pink-400 border-pink-500/30',
+    'Special Edition': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
     'Standard': 'bg-gray-500/20 text-gray-400 border-gray-500/30',
   };
 
@@ -73,8 +72,8 @@ export default function ReleaseCard({ release }: { release: Release }) {
       </div>
 
       {/* Info */}
-      <div className="p-4 space-y-3">
-        <h3 className="font-display text-lg text-white leading-tight line-clamp-2 group-hover:text-[#4da6ff] transition-colors">
+      <div className="p-3 space-y-2">
+        <h3 className="font-display text-base text-white leading-tight line-clamp-2 group-hover:text-[#4da6ff] transition-colors">
           {release.title}
         </h3>
 
@@ -127,14 +126,14 @@ export default function ReleaseCard({ release }: { release: Release }) {
         </div>
 
         {release.price && (
-          <p className="text-xl font-bold text-white">${release.price.toFixed(2)}</p>
+          <p className="text-lg font-bold text-white">${release.price.toFixed(2)}</p>
         )}
 
         {/* Where to Buy */}
         <div>
           <button
             onClick={() => setShowRetailers(!showRetailers)}
-            className="w-full flex items-center justify-between bg-[#4da6ff]/10 hover:bg-[#4da6ff]/20 text-[#4da6ff] px-4 py-2.5 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+            className="w-full flex items-center justify-between bg-[#4da6ff]/10 hover:bg-[#4da6ff]/20 text-[#4da6ff] px-3 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
           >
             <span>Where to Buy</span>
             <svg className={`w-4 h-4 transition-transform ${showRetailers ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">

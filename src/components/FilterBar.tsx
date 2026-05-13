@@ -34,15 +34,6 @@ function formatMonth(yearMonth: string): string {
   return date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 }
 
-const editionColors: Record<string, string> = {
-  'SteelBook': 'bg-sky-500/20 text-sky-400 border-sky-500/30',
-  "Collector's": 'bg-rose-500/20 text-rose-400 border-rose-500/30',
-  'Limited Edition': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
-  'DigiPack': 'bg-teal-500/20 text-teal-400 border-teal-500/30',
-  'Deluxe Edition': 'bg-pink-500/20 text-pink-400 border-pink-500/30',
-  'Standard': 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-};
-
 export default function FilterBar({ filter, sort, month, edition, availableMonths, availableEditions, onFilterChange, onSortChange, onMonthChange, onEditionChange }: FilterBarProps) {
   return (
     <div className="space-y-3">
@@ -127,28 +118,22 @@ export default function FilterBar({ filter, sort, month, edition, availableMonth
             </button>
           ))}
 
-          {/* Edition filter pills */}
-          {availableEditions.length > 1 && (
-            <>
-              <div className="w-px h-8 bg-[#1e2030] self-center mx-1 hidden sm:block" />
-              {availableEditions.map(ed => {
-                const colors = editionColors[ed] || editionColors['Standard'];
-                const isActive = edition === ed;
-                return (
-                  <button
-                    key={ed}
-                    onClick={() => onEditionChange(isActive ? 'all' : ed)}
-                    className={`px-3 py-1.5 rounded-full text-xs font-semibold border transition-all cursor-pointer ${
-                      isActive ? colors + ' ring-1 ring-current' : 'bg-[#12131a] text-gray-500 border-[#1e2030] hover:border-gray-500 hover:text-gray-300'
-                    }`}
-                  >
-                    {ed}
-                  </button>
-                );
-              })}
-            </>
-          )}
         </div>
+
+        {availableEditions.length > 1 && (
+          <select
+            value={edition}
+            onChange={(e) => onEditionChange(e.target.value)}
+            className="bg-[#12131a] border border-[#1e2030] text-gray-300 text-sm rounded-lg px-4 py-2 focus:border-[#4da6ff] focus:outline-none cursor-pointer"
+          >
+            <option value="all">All Editions</option>
+            {availableEditions.map(ed => (
+              <option key={ed} value={ed}>
+                {ed}
+              </option>
+            ))}
+          </select>
+        )}
 
         <select
           value={sort}

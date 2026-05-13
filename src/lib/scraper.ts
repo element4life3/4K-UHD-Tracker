@@ -27,10 +27,8 @@ function resolveEdition(casing: string, edition: string): string {
     const lower = edition.toLowerCase();
     if (lower.includes('steelbook')) return 'SteelBook';
     if (lower.includes("collector")) return "Collector's";
-    if (lower.includes('limited')) return 'Limited Edition';
-    if (lower.includes('ultimate')) return 'Ultimate Edition';
-    if (lower.includes('deluxe')) return 'Deluxe Edition';
     if (lower.includes('standard')) return 'Standard';
+    if (lower.includes('edition')) return 'Special Edition';
     return edition.split(',')[0].trim();
   }
   return 'Standard';
