@@ -16,6 +16,7 @@ export default function Home() {
   const [sort, setSort] = useState<SortOption>('date-asc');
   const [month, setMonth] = useState('all');
   const [edition, setEdition] = useState('all');
+  const [expandedRowId, setExpandedRowId] = useState<string | null>(null);
   const [view, setView] = useState<ViewMode>('card');
 
   // Load saved view preference
@@ -300,7 +301,14 @@ export default function Home() {
           ) : (
             <div className="flex flex-col gap-2">
               {filtered.map((release) => (
-                <ReleaseRow key={release.id} release={release} />
+                <ReleaseRow
+                  key={release.id}
+                  release={release}
+                  expanded={expandedRowId === release.id}
+                  onToggle={() =>
+                    setExpandedRowId(prev => (prev === release.id ? null : release.id))
+                  }
+                />
               ))}
             </div>
           )

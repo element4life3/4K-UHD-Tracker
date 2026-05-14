@@ -6,6 +6,12 @@ import StatusBadge from './StatusBadge';
 import RetailerList from './RetailerList';
 import DiscDetails from './DiscDetails';
 
+interface ReleaseRowProps {
+  release: Release;
+  expanded: boolean;
+  onToggle: () => void;
+}
+
 const editionColors: Record<string, string> = {
   'SteelBook': 'bg-sky-500/20 text-sky-400 border-sky-500/30',
   'DigiPack': 'bg-teal-500/20 text-teal-400 border-teal-500/30',
@@ -24,8 +30,7 @@ function CoverPlaceholder({ className }: { className?: string }) {
   );
 }
 
-export default function ReleaseRow({ release }: { release: Release }) {
-  const [expanded, setExpanded] = useState(false);
+export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowProps) {
   const [imgError, setImgError] = useState(false);
 
   const formattedDate = new Date(release.releaseDate).toLocaleDateString('en-US', {
@@ -70,7 +75,7 @@ export default function ReleaseRow({ release }: { release: Release }) {
         {/* Right column: header row + (when expanded) Disc Details below it */}
         <div className="flex-1 min-w-0 flex flex-col">
           <button
-            onClick={() => setExpanded(v => !v)}
+            onClick={onToggle}
             className="flex items-center gap-4 p-3 cursor-pointer text-left w-full group"
           >
             {/* Title + meta */}
