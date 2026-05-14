@@ -26,7 +26,7 @@ export default function SearchBar({ value, onChange }: SearchBarProps) {
         placeholder="Search titles, studios..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full bg-[#12131a] border border-[#1e2030] text-white placeholder-gray-500 rounded-xl pl-12 pr-4 py-3 text-sm focus:border-[#4da6ff] focus:outline-none focus:ring-1 focus:ring-[#4da6ff]/30 transition-all"
+        className="w-full h-12 bg-[#12131a] border border-[#1e2030] text-white placeholder-gray-500 rounded-xl pl-12 pr-4 text-sm leading-none focus:border-[#4da6ff] focus:outline-none focus:ring-1 focus:ring-[#4da6ff]/30 transition-all"
       />
       {value && (
         <button

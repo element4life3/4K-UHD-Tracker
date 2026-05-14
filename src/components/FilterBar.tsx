@@ -42,7 +42,7 @@ function formatMonth(yearMonth: string): string {
 export default function FilterBar({ filter, sort, month, edition, search, newCount, availableMonths, availableEditions, onFilterChange, onSortChange, onMonthChange, onEditionChange, onSearchChange }: FilterBarProps) {
   return (
     <div className="space-y-3">
-      {/* Search + status filters + month + edition + sort */}
+      {/* Search + status filters + month + edition + sort + view toggle */}
       <div className="flex flex-col sm:flex-row sm:items-start gap-3">
         <div className="flex-1">
           <SearchBar value={search} onChange={onSearchChange} />

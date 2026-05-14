@@ -1,8 +1,9 @@
 'use client';
 
 import { useState, useEffect, useMemo } from 'react';
-import type { Release, FilterStatus, SortOption } from '@/lib/types';
+import type { Release, FilterStatus, SortOption, ViewMode } from '@/lib/types';
 import ReleaseCard from '@/components/ReleaseCard';
+import ReleaseRow from '@/components/ReleaseRow';
 import SkeletonCard from '@/components/SkeletonCard';
 import FilterBar from '@/components/FilterBar';
 
@@ -14,8 +15,19 @@ export default function Home() {
   const [filter, setFilter] = useState<FilterStatus>('all-upcoming');
   const [sort, setSort] = useState<SortOption>('date-asc');
   const [month, setMonth] = useState('all');
-  const [newReleaseIds, setNewReleaseIds] = useState<Set<string>>(new Set());
   const [edition, setEdition] = useState('all');
+  const [view, setView] = useState<ViewMode>('card');
+
+  // Load saved view preference
+  useEffect(() => {
+    const saved = localStorage.getItem('4k-tracker-view');
+    if (saved === 'card' || saved === 'list') setView(saved);
+  }, []);
+
+  const handleViewChange = (next: ViewMode) => {
+    setView(next);
+    localStorage.setItem('4k-tracker-view', next);
+  };
 
   const handleMonthChange = (newMonth: string) => {
     setMonth(newMonth);
@@ -41,34 +53,17 @@ export default function Home() {
     fetchReleases();
   }, []);
 
-  // Compare against localStorage timestamp once after data loads to identify
-  // releases added since the user's last visit. The lastSeen value is captured
-  // at page load (then immediately reset to now), so the set stays stable for
-  // this session even if the user clicks Newly Added later.
-  const [newSetComputed, setNewSetComputed] = useState(false);
-  useEffect(() => {
-    if (releases.length === 0 || newSetComputed) return;
-    setNewSetComputed(true);
-
-    const STORAGE_KEY = '4k-tracker-last-seen';
-    const lastSeen = localStorage.getItem(STORAGE_KEY);
-
-    if (lastSeen) {
-      const lastSeenTime = new Date(lastSeen).getTime();
-      const ids = new Set(
-        releases.filter(r => new Date(r.addedAt).getTime() > lastSeenTime).map(r => r.id)
-      );
-      setNewReleaseIds(ids);
-    }
-
-    localStorage.setItem(STORAGE_KEY, new Date().toISOString());
-  }, [releases, newSetComputed]);
-
   async function fetchReleases() {
     try {
       const res = await fetch('/releases.json');
       const data = await res.json();
-      setReleases(data.releases || []);
+      // Status is computed at render time so it stays accurate between rebuilds.
+      // The stored value in releases.json is ignored.
+      const withFreshStatus = (data.releases || []).map((r: Release) => ({
+        ...r,
+        status: computeStatus(r.releaseDate),
+      }));
+      setReleases(withFreshStatus);
       setLastUpdated(data.lastUpdated);
     } catch (err) {
       console.error('Failed to fetch releases:', err);
@@ -77,10 +72,31 @@ export default function Home() {
     }
   }
 
+  function computeStatus(releaseDate: string): Release['status'] {
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const rel = new Date(releaseDate);
+    const relDay = new Date(rel.getFullYear(), rel.getMonth(), rel.getDate());
+    const diffDays = Math.ceil((relDay.getTime() - today.getTime()) / 86400000);
+    if (diffDays <= 0) return 'out-now';
+    if (diffDays <= 7) return 'this-week';
+    if (diffDays <= 14) return 'coming-soon';
+    return 'upcoming';
+  }
+
   const availableMonths = useMemo(() => {
     const months = new Set<string>();
     releases.forEach(r => months.add(r.releaseDate.substring(0, 7)));
     return [...months].sort();
+  }, [releases]);
+
+  // Releases added to the tracker within this many days qualify as "newly added".
+  const NEWLY_ADDED_WINDOW_DAYS = 90;
+  const recentlyAddedIds = useMemo(() => {
+    const cutoff = Date.now() - NEWLY_ADDED_WINDOW_DAYS * 24 * 60 * 60 * 1000;
+    return new Set(
+      releases.filter(r => new Date(r.addedAt).getTime() >= cutoff).map(r => r.id)
+    );
   }, [releases]);
 
   const availableEditions = useMemo(() => {
@@ -111,7 +127,7 @@ export default function Home() {
       const today = new Date().toISOString().split('T')[0];
       result = result.filter(r => r.releaseDate >= today);
     } else if (filter === 'newly-added') {
-      result = result.filter(r => newReleaseIds.has(r.id));
+      result = result.filter(r => recentlyAddedIds.has(r.id));
     } else if (filter !== 'all') {
       result = result.filter(r => r.status === filter);
     }
@@ -120,23 +136,35 @@ export default function Home() {
       result = result.filter(r => r.edition === edition);
     }
 
-    result.sort((a, b) => {
-      switch (sort) {
-        case 'date-asc':
-          return a.releaseDate.localeCompare(b.releaseDate);
-        case 'date-desc':
-          return b.releaseDate.localeCompare(a.releaseDate);
-        case 'title-asc':
-          return a.title.localeCompare(b.title);
-        case 'title-desc':
-          return b.title.localeCompare(a.title);
-        default:
-          return 0;
-      }
-    });
+    if (filter === 'newly-added') {
+      // Show newest additions first regardless of the user's Sort By selection.
+      result.sort((a, b) => b.addedAt.localeCompare(a.addedAt));
+    } else {
+      result.sort((a, b) => {
+        switch (sort) {
+          case 'date-asc':
+            return a.releaseDate.localeCompare(b.releaseDate);
+          case 'date-desc':
+            return b.releaseDate.localeCompare(a.releaseDate);
+          case 'title-asc':
+            return a.title.localeCompare(b.title);
+          case 'title-desc':
+            return b.title.localeCompare(a.title);
+          default:
+            return 0;
+        }
+      });
+    }
 
     return result;
-  }, [releases, search, filter, sort, month, edition, newReleaseIds]);
+  }, [releases, search, filter, sort, month, edition, recentlyAddedIds]);
+
+  const filterContextLabel = ({
+    'all-upcoming': 'including all upcoming',
+    'all': 'including all upcoming and past releases',
+    'this-week': 'for this week only',
+    'newly-added': `added in the past ${NEWLY_ADDED_WINDOW_DAYS} days`,
+  } as Record<string, string>)[filter];
 
   const formattedLastUpdated = lastUpdated
     ? new Date(lastUpdated).toLocaleString('en-US', {
@@ -199,7 +227,7 @@ export default function Home() {
           month={month}
           edition={edition}
           search={search}
-          newCount={newReleaseIds.size}
+          newCount={recentlyAddedIds.size}
           availableMonths={availableMonths}
           availableEditions={availableEditions}
           onFilterChange={setFilter}
@@ -209,20 +237,53 @@ export default function Home() {
           onSearchChange={setSearch}
         />
 
-        {/* Stats */}
+        {/* Stats + view toggle */}
         {!loading && (
-          <div className="flex items-center justify-between text-sm text-gray-500">
+          <div className="flex items-center justify-between gap-3 text-sm text-gray-500">
             <span>
               {filtered.length} {filtered.length === 1 ? 'release' : 'releases'}
-              {filter !== 'all' || search ? ' found' : ''}
+              {filterContextLabel && (
+                <span className="text-gray-600 ml-1">{filterContextLabel}</span>
+              )}
             </span>
-            {formattedLastUpdated && (
-              <span className="sm:hidden text-xs">Updated: {formattedLastUpdated}</span>
-            )}
+            <div className="flex items-center gap-3">
+              {formattedLastUpdated && (
+                <span className="sm:hidden text-xs">Updated: {formattedLastUpdated}</span>
+              )}
+              <div className="inline-flex h-9 rounded-lg border border-[#1e2030] bg-[#12131a] p-1">
+                <button
+                  onClick={() => handleViewChange('card')}
+                  aria-label="Card view"
+                  aria-pressed={view === 'card'}
+                  className={`flex items-center justify-center w-10 rounded-md transition-all cursor-pointer ${
+                    view === 'card' ? 'bg-[#4da6ff] text-[#0a0b0f]' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <rect x="3" y="3" width="7" height="7" rx="1" />
+                    <rect x="14" y="3" width="7" height="7" rx="1" />
+                    <rect x="3" y="14" width="7" height="7" rx="1" />
+                    <rect x="14" y="14" width="7" height="7" rx="1" />
+                  </svg>
+                </button>
+                <button
+                  onClick={() => handleViewChange('list')}
+                  aria-label="List view"
+                  aria-pressed={view === 'list'}
+                  className={`flex items-center justify-center w-10 rounded-md transition-all cursor-pointer ${
+                    view === 'list' ? 'bg-[#4da6ff] text-[#0a0b0f]' : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
-        {/* Release Grid */}
+        {/* Release Grid / List */}
         {loading ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
@@ -230,11 +291,19 @@ export default function Home() {
             ))}
           </div>
         ) : filtered.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
-            {filtered.map((release) => (
-              <ReleaseCard key={release.id} release={release} />
-            ))}
-          </div>
+          view === 'card' ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              {filtered.map((release) => (
+                <ReleaseCard key={release.id} release={release} />
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {filtered.map((release) => (
+                <ReleaseRow key={release.id} release={release} />
+              ))}
+            </div>
+          )
         ) : (
           <div className="text-center py-20">
             <svg className="w-16 h-16 mx-auto mb-4 text-[#1e2030]" fill="none" viewBox="0 0 24 24" stroke="currentColor">

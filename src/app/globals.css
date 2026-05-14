@@ -82,8 +82,9 @@ body {
 .release-card:nth-child(8) { animation-delay: 0.4s; }
 
 /* Skeleton card animation */
-.skeleton-card {
-  animation: fadeIn 0.3s ease-out both;
+.skeleton-card,
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out both;
 }
 @keyframes fadeIn {
   from { opacity: 0; }

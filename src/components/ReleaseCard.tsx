@@ -1,8 +1,11 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import type { Release } from '@/lib/types';
 import StatusBadge from './StatusBadge';
+import RetailerList from './RetailerList';
+import DiscDetails from './DiscDetails';
+import TrailerModal from './TrailerModal';
 
 function CoverPlaceholder({ title }: { title: string }) {
   return (
@@ -20,6 +23,7 @@ function CoverPlaceholder({ title }: { title: string }) {
 export default function ReleaseCard({ release }: { release: Release }) {
   const [showRetailers, setShowRetailers] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
+  const [showTrailer, setShowTrailer] = useState(false);
   const [imgError, setImgError] = useState(false);
 
   const formattedDate = new Date(release.releaseDate).toLocaleDateString('en-US', {
@@ -27,15 +31,6 @@ export default function ReleaseCard({ release }: { release: Release }) {
     month: 'short',
     day: 'numeric',
   });
-
-  const verifiedRetailers = useMemo(
-    () => release.retailers.filter(r => !r.name.startsWith('Search ')),
-    [release.retailers]
-  );
-  const searchRetailers = useMemo(
-    () => release.retailers.filter(r => r.name.startsWith('Search ')),
-    [release.retailers]
-  );
 
   const editionColors: Record<string, string> = {
     'SteelBook': 'bg-sky-500/20 text-sky-400 border-sky-500/30',
@@ -100,15 +95,25 @@ export default function ReleaseCard({ release }: { release: Release }) {
 
         <div className="space-y-1.5 text-sm text-gray-400">
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-            </svg>
+            <span className="group/tip relative inline-flex">
+              <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap rounded bg-[#1a1b26] border border-[#1e2030] px-2 py-1 text-[10px] text-gray-200 opacity-0 group-hover/tip:opacity-100 transition-opacity z-10">
+                Release Date
+              </span>
+            </span>
             {formattedDate}
           </div>
           <div className="flex items-center gap-2">
-            <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-            </svg>
+            <span className="group/tip relative inline-flex">
+              <svg className="w-4 h-4 text-gray-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+              </svg>
+              <span className="pointer-events-none absolute bottom-full left-1/2 mb-1 -translate-x-1/2 whitespace-nowrap rounded bg-[#1a1b26] border border-[#1e2030] px-2 py-1 text-[10px] text-gray-200 opacity-0 group-hover/tip:opacity-100 transition-opacity z-10">
+                Studio
+              </span>
+            </span>
             {release.studio}
           </div>
           {release.imdbRating && (
@@ -129,6 +134,19 @@ export default function ReleaseCard({ release }: { release: Release }) {
           <p className="text-lg font-bold text-white">${release.price.toFixed(2)}</p>
         )}
 
+        {/* Watch Trailer */}
+        {release.trailerYoutubeId && (
+          <button
+            onClick={() => setShowTrailer(true)}
+            className="w-full flex items-center justify-center gap-2 bg-[#1a1b26] hover:bg-[#22243a] text-gray-200 px-3 py-2 rounded-lg text-sm font-semibold transition-colors cursor-pointer"
+          >
+            <svg className="w-4 h-4 text-[#4da6ff]" fill="currentColor" viewBox="0 0 24 24">
+              <path d="M8 5v14l11-7z" />
+            </svg>
+            <span>Watch Trailer</span>
+          </button>
+        )}
+
         {/* Where to Buy */}
         <div>
           <button
@@ -142,61 +160,8 @@ export default function ReleaseCard({ release }: { release: Release }) {
           </button>
 
           {showRetailers && (
-            <div className="mt-2 space-y-1 animate-slide-down">
-              {verifiedRetailers.map((retailer) => (
-                <a
-                  key={retailer.name}
-                  href={retailer.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center justify-between px-4 py-2 rounded-lg bg-[#1a1b26] hover:bg-[#22243a] text-sm transition-colors"
-                >
-                  <div className="flex items-center gap-2">
-                    <span className="text-gray-300">{retailer.name}</span>
-                    {retailer.name === 'Pre-order' && (
-                      <span className="text-[10px] text-amber-400 bg-amber-400/10 px-1.5 py-0.5 rounded">PRE-ORDER</span>
-                    )}
-                  </div>
-                  {retailer.price ? (
-                    <span className="text-[#4da6ff] font-semibold">${retailer.price.toFixed(2)}</span>
-                  ) : retailer.name !== 'Blu-ray.com' ? (
-                    <span className="text-gray-500 text-xs">View</span>
-                  ) : (
-                    <svg className="w-4 h-4 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                    </svg>
-                  )}
-                </a>
-              ))}
-
-              {searchRetailers.length > 0 && (
-                <>
-                  <div className="flex items-center gap-2 px-4 pt-1.5">
-                    <div className="h-px flex-1 bg-[#1e2030]" />
-                    <span className="text-[10px] text-gray-600 uppercase tracking-wider">Also check</span>
-                    <div className="h-px flex-1 bg-[#1e2030]" />
-                  </div>
-                  {searchRetailers.map((retailer) => (
-                    <a
-                      key={retailer.name}
-                      href={retailer.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-between px-4 py-1.5 rounded-lg hover:bg-[#1a1b26] text-sm transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <span className="text-gray-500">{retailer.name.replace('Search ', '')}</span>
-                      </div>
-                      <svg className="w-3.5 h-3.5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                    </a>
-                  ))}
-                </>
-              )}
+            <div className="mt-2 animate-slide-down">
+              <RetailerList release={release} />
             </div>
           )}
         </div>
@@ -215,65 +180,21 @@ export default function ReleaseCard({ release }: { release: Release }) {
             </button>
 
             {showDetails && (
-              <div className="mt-2 px-4 py-3 rounded-lg bg-[#1a1b26] text-xs space-y-3 animate-slide-down">
-                {/* Video */}
-                {release.specs.video.length > 0 && (
-                  <div>
-                    <p className="text-[#4da6ff] font-semibold mb-1">Video</p>
-                    {release.specs.video.map((line, i) => (
-                      <p key={i} className="text-gray-400 leading-relaxed">{line}</p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Audio */}
-                {release.specs.audio.length > 0 && (
-                  <div>
-                    <p className="text-[#4da6ff] font-semibold mb-1">Audio</p>
-                    {release.specs.audio.map((line, i) => (
-                      <p key={i} className="text-gray-400 leading-relaxed">{line}</p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Subtitles */}
-                <div>
-                  <p className="text-[#4da6ff] font-semibold mb-1">Subtitles</p>
-                  <p className="text-gray-400">{release.specs.subtitles}</p>
-                </div>
-
-                {/* Discs */}
-                {release.specs.discs.length > 0 && (
-                  <div>
-                    <p className="text-[#4da6ff] font-semibold mb-1">Discs</p>
-                    {release.specs.discs.map((line, i) => (
-                      <p key={i} className="text-gray-400 leading-relaxed">{line}</p>
-                    ))}
-                  </div>
-                )}
-
-                {/* Packaging */}
-                {release.specs.packaging && release.specs.packaging !== 'Standard' && (
-                  <div>
-                    <p className="text-[#4da6ff] font-semibold mb-1">Packaging</p>
-                    <p className="text-gray-400">{release.specs.packaging}</p>
-                  </div>
-                )}
-
-                {/* Playback */}
-                {release.specs.playback.length > 0 && (
-                  <div>
-                    <p className="text-[#4da6ff] font-semibold mb-1">Playback</p>
-                    {release.specs.playback.map((line, i) => (
-                      <p key={i} className="text-gray-400 leading-relaxed">{line}</p>
-                    ))}
-                  </div>
-                )}
+              <div className="mt-2 animate-slide-down">
+                <DiscDetails specs={release.specs} />
               </div>
             )}
           </div>
         )}
       </div>
+
+      {showTrailer && release.trailerYoutubeId && (
+        <TrailerModal
+          youtubeId={release.trailerYoutubeId}
+          title={release.title}
+          onClose={() => setShowTrailer(false)}
+        />
+      )}
     </div>
   );
 }

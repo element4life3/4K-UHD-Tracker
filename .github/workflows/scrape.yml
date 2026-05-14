@@ -23,6 +23,8 @@ jobs:
       - run: npm ci
 
       - run: npm run scrape
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
 
       - name: Commit if changed
         run: |
