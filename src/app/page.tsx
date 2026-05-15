@@ -248,9 +248,6 @@ export default function Home() {
               )}
             </span>
             <div className="flex items-center gap-3">
-              {formattedLastUpdated && (
-                <span className="sm:hidden text-xs">Updated: {formattedLastUpdated}</span>
-              )}
               <div className="inline-flex h-9 rounded-lg border border-[#1e2030] bg-[#12131a] p-1">
                 <button
                   onClick={() => handleViewChange('card')}
@@ -286,20 +283,20 @@ export default function Home() {
 
         {/* Release Grid / List */}
         {loading ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
             {Array.from({ length: 8 }).map((_, i) => (
               <SkeletonCard key={i} />
             ))}
           </div>
         ) : filtered.length > 0 ? (
           view === 'card' ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-4">
               {filtered.map((release) => (
                 <ReleaseCard key={release.id} release={release} />
               ))}
             </div>
           ) : (
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-col gap-2.5 sm:gap-2">
               {filtered.map((release) => (
                 <ReleaseRow
                   key={release.id}

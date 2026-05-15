@@ -5,6 +5,7 @@ import type { Release } from '@/lib/types';
 import StatusBadge from './StatusBadge';
 import RetailerList from './RetailerList';
 import DiscDetails from './DiscDetails';
+import TrailerModal from './TrailerModal';
 
 interface ReleaseRowProps {
   release: Release;
@@ -32,6 +33,7 @@ function CoverPlaceholder({ className }: { className?: string }) {
 
 export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowProps) {
   const [imgError, setImgError] = useState(false);
+  const [showTrailer, setShowTrailer] = useState(false);
 
   const formattedDate = new Date(release.releaseDate).toLocaleDateString('en-US', {
     year: 'numeric',
@@ -54,7 +56,7 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
     }`}>
       <div className="flex items-stretch">
         {/* Left column: image + (when expanded) Where to Buy below it */}
-        <div className={`shrink-0 bg-[#1a1b26] ${expanded ? 'w-40' : 'w-12'}`}>
+        <div className={`shrink-0 bg-[#1a1b26] flex flex-col ${expanded ? 'w-40' : 'w-12 justify-center'}`}>
           {showImage ? (
             <img
               src={release.coverArt!}
@@ -66,7 +68,18 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
             <CoverPlaceholder className={expanded ? expandedImg : collapsedImg} />
           )}
           {expanded && (
-            <div className="p-2 animate-slide-down">
+            <div className="p-2 space-y-2 animate-slide-down">
+              {release.trailerYoutubeId && (
+                <button
+                  onClick={() => setShowTrailer(true)}
+                  className="sm:hidden w-full flex items-center justify-center gap-2 bg-[#12131a] hover:bg-[#22243a] text-gray-200 px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer"
+                >
+                  <svg className="w-3.5 h-3.5 text-[#4da6ff]" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                  <span>Watch Trailer</span>
+                </button>
+              )}
               <RetailerList release={release} />
             </div>
           )}
@@ -76,11 +89,11 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
         <div className="flex-1 min-w-0 flex flex-col">
           <button
             onClick={onToggle}
-            className="flex items-center gap-4 p-3 cursor-pointer text-left w-full group"
+            className="flex items-center gap-4 p-2 sm:p-3 cursor-pointer text-left w-full group"
           >
             {/* Title + meta */}
             <div className="flex-1 min-w-0">
-              <h3 className="font-display text-base text-white leading-tight truncate group-hover:text-[#4da6ff] transition-colors">
+              <h3 className={`font-title font-semibold text-[15px] text-white leading-snug tracking-tight group-hover:text-[#4da6ff] transition-colors sm:truncate ${expanded ? 'max-sm:line-clamp-2' : 'max-sm:truncate'}`}>
                 {release.title}
               </h3>
               <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
@@ -93,6 +106,11 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
                     {release.mpaaRating.replace('Rated ', '')}
                   </span>
                 )}
+                {/* Release date — mobile only (sm+ has its own column) */}
+                {(release.year || release.runtime || release.mpaaRating) && (
+                  <span className="md:hidden text-gray-700">&#8226;</span>
+                )}
+                <span className="md:hidden">Releases {formattedDate}</span>
               </div>
             </div>
 
@@ -134,8 +152,8 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
               )}
             </div>
 
-            {/* Price */}
-            <div className="text-base font-bold text-white shrink-0 w-20 text-right">
+            {/* Price + (mobile only) badges stacked on the right */}
+            <div className={`text-base font-bold text-white shrink-0 w-20 text-right ${expanded ? 'hidden sm:block' : ''}`}>
               {release.price ? `$${release.price.toFixed(2)}` : <span className="text-gray-700">—</span>}
             </div>
 
@@ -150,6 +168,34 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
             </svg>
           </button>
 
+          {/* Mobile-only extra meta when expanded */}
+          {expanded && (
+            <div className="sm:hidden px-3 pb-2 space-y-2 animate-slide-down">
+              <div className="flex items-center gap-1.5">
+                <StatusBadge status={release.status} />
+                <span className={`font-semibold px-2 py-0.5 rounded-full border text-[10px] ${editionColors[release.edition] || editionColors['Standard']}`}>
+                  {release.edition}
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
+                <span>{release.studio}</span>
+                {release.imdbRating && (
+                  <a
+                    href={release.imdbUrl || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1 hover:text-[#f5c518]"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span className="text-[#f5c518] font-bold text-[10px] bg-[#f5c518]/10 px-1.5 py-0.5 rounded">IMDb</span>
+                    <span className="text-white font-semibold">{release.imdbRating}</span>
+                  </a>
+                )}
+                <span className="text-gray-600">Added {formattedAddedDate}</span>
+              </div>
+            </div>
+          )}
+
           {expanded && (release.specs || release.trailerYoutubeId) && (
             <div className="px-3 pb-3 flex flex-col md:flex-row gap-3 animate-slide-down">
               {release.specs && (
@@ -158,7 +204,7 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
                 </div>
               )}
               {release.trailerYoutubeId && (
-                <div className="flex-1 min-w-0">
+                <div className="hidden sm:block flex-1 min-w-0">
                   <div className="aspect-video rounded-lg overflow-hidden bg-black">
                     <iframe
                       src={`https://www.youtube-nocookie.com/embed/${release.trailerYoutubeId}`}
@@ -174,6 +220,14 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
           )}
         </div>
       </div>
+
+      {showTrailer && release.trailerYoutubeId && (
+        <TrailerModal
+          youtubeId={release.trailerYoutubeId}
+          title={release.title}
+          onClose={() => setShowTrailer(false)}
+        />
+      )}
     </div>
   );
 }

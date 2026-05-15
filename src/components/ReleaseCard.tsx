@@ -14,7 +14,7 @@ function CoverPlaceholder({ title }: { title: string }) {
         <svg className="w-16 h-16 mx-auto mb-3 text-[#2a2d3e]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z" />
         </svg>
-        <p className="text-[#3a3d52] font-display text-sm leading-tight">{title}</p>
+        <p className="text-[#3a3d52] font-title font-semibold text-sm leading-snug tracking-tight">{title}</p>
       </div>
     </div>
   );
@@ -68,7 +68,7 @@ export default function ReleaseCard({ release }: { release: Release }) {
 
       {/* Info */}
       <div className="p-3 space-y-2">
-        <h3 className="font-display text-base text-white leading-tight line-clamp-2 group-hover:text-[#4da6ff] transition-colors">
+        <h3 className="font-title font-semibold text-[15px] text-white leading-snug line-clamp-2 tracking-tight group-hover:text-[#4da6ff] transition-colors">
           {release.title}
         </h3>
 
