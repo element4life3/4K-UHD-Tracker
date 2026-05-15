@@ -47,7 +47,7 @@ export default function FilterBar({ filter, sort, month, edition, search, newCou
         <div className="flex-1">
           <SearchBar value={search} onChange={onSearchChange} />
         </div>
-        <div className="grid grid-flow-col auto-cols-fr gap-1 sm:flex sm:flex-wrap sm:items-start sm:gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:items-start">
           {filterOptions
             .filter(option => {
               if (option.value !== 'this-week') return true;
@@ -55,31 +55,26 @@ export default function FilterBar({ filter, sort, month, edition, search, newCou
               return month === 'all' || month === currentYearMonth;
             })
             .map(option => {
-              const button = (
+              const isActive = filter === option.value;
+              const showCount = option.value === 'newly-added' && newCount > 0;
+              return (
                 <button
                   key={option.value}
                   onClick={() => onFilterChange(option.value)}
-                  className={`h-10 px-2 text-[11px] sm:px-4 sm:text-sm rounded-full font-medium leading-none transition-all cursor-pointer whitespace-nowrap ${
-                    filter === option.value
+                  className={`h-10 px-4 text-sm rounded-full font-medium leading-none transition-all cursor-pointer whitespace-nowrap inline-flex items-center justify-center gap-2 ${
+                    isActive
                       ? 'bg-[#4da6ff] text-[#0a0b0f]'
                       : 'bg-[#12131a] text-gray-400 border border-[#1e2030] hover:border-[#4da6ff]/40 hover:text-white'
                   }`}
                 >
-                  {option.label}
+                  <span>{option.label}</span>
+                  {showCount && (
+                    <span className={`font-bold ${isActive ? 'text-[#0a0b0f]' : 'text-[#4da6ff]'}`}>
+                      {newCount}
+                    </span>
+                  )}
                 </button>
               );
-
-              if (option.value === 'newly-added' && newCount > 0) {
-                return (
-                  <div key={option.value} className="flex flex-col">
-                    {button}
-                    <span className="text-[10px] text-[#4da6ff] uppercase tracking-wider mt-1 text-center">
-                      {newCount} New
-                    </span>
-                  </div>
-                );
-              }
-              return button;
             })}
         </div>
 
