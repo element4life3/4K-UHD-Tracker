@@ -21,6 +21,13 @@ const editionColors: Record<string, string> = {
   'Standard': 'bg-gray-500/20 text-gray-400 border-gray-500/30',
 };
 
+const statusInline: Record<string, { label: string; classes: string }> = {
+  'out-now':     { label: 'Out Now',     classes: 'bg-green-500/20 text-green-400 border-green-500/30' },
+  'this-week':   { label: 'This Week',   classes: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
+  'coming-soon': { label: 'Coming Soon', classes: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
+  'upcoming':    { label: 'Upcoming',    classes: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
+};
+
 function CoverPlaceholder({ className }: { className?: string }) {
   return (
     <div className={`w-full flex items-center justify-center text-[#3a3d52] ${className ?? ''}`}>
@@ -96,6 +103,17 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
               <h3 className={`font-title font-semibold text-[15px] text-white leading-snug tracking-tight group-hover:text-[#4da6ff] transition-colors sm:truncate ${expanded ? 'max-sm:line-clamp-2' : 'max-sm:truncate'}`}>
                 {release.title}
               </h3>
+              {/* Mobile-only badges above the meta line (only when expanded) */}
+              {expanded && (
+                <div className="sm:hidden mt-1.5 flex items-center gap-1.5">
+                  <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs leading-none whitespace-nowrap ${statusInline[release.status]?.classes ?? ''}`}>
+                    {statusInline[release.status]?.label ?? release.status}
+                  </span>
+                  <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs leading-none whitespace-nowrap ${editionColors[release.edition] || editionColors['Standard']}`}>
+                    {release.edition}
+                  </span>
+                </div>
+              )}
               <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500 flex-wrap">
                 {release.year && <span>{release.year}</span>}
                 {release.year && release.runtime && <span className="text-gray-700">&#8226;</span>}
@@ -168,36 +186,28 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
             </svg>
           </button>
 
-          {/* Mobile-only extra meta when expanded */}
+          {/* Mobile-only extra meta when expanded (badges shown in title section above) */}
           {expanded && (
-            <div className="sm:hidden px-3 pb-2 space-y-2 animate-slide-down">
-              <div className="flex items-center gap-1.5">
-                <StatusBadge status={release.status} />
-                <span className={`font-semibold px-2 py-0.5 rounded-full border text-[10px] ${editionColors[release.edition] || editionColors['Standard']}`}>
-                  {release.edition}
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400">
-                <span>{release.studio}</span>
-                {release.imdbRating && (
-                  <a
-                    href={release.imdbUrl || '#'}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-1 hover:text-[#f5c518]"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span className="text-[#f5c518] font-bold text-[10px] bg-[#f5c518]/10 px-1.5 py-0.5 rounded">IMDb</span>
-                    <span className="text-white font-semibold">{release.imdbRating}</span>
-                  </a>
-                )}
-                <span className="text-gray-600">Added {formattedAddedDate}</span>
-              </div>
+            <div className="sm:hidden px-2 sm:px-3 pb-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-400 animate-slide-down">
+              <span>{release.studio}</span>
+              {release.imdbRating && (
+                <a
+                  href={release.imdbUrl || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1 hover:text-[#f5c518]"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <span className="text-[#f5c518] font-bold text-[10px] bg-[#f5c518]/10 px-1.5 py-0.5 rounded">IMDb</span>
+                  <span className="text-white font-semibold">{release.imdbRating}</span>
+                </a>
+              )}
+              <span className="text-gray-600">Added {formattedAddedDate}</span>
             </div>
           )}
 
           {expanded && (release.specs || release.trailerYoutubeId) && (
-            <div className="px-3 pb-3 flex flex-col md:flex-row gap-3 animate-slide-down">
+            <div className="px-2 sm:px-3 pb-3 flex flex-col md:flex-row gap-3 animate-slide-down">
               {release.specs && (
                 <div className="w-full md:w-72 md:shrink-0">
                   <DiscDetails specs={release.specs} />

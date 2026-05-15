@@ -7,6 +7,9 @@ const OUTPUT_PATH = join(process.cwd(), 'public', 'releases.json');
 const TMDB_API_KEY = process.env.TMDB_API_KEY;
 const TMDB_BATCH_SIZE = 5;
 const TMDB_BATCH_DELAY_MS = 250;
+const AMAZON_BATCH_SIZE = 5;
+const AMAZON_BATCH_DELAY_MS = 800;
+const AFFILIATE_PARAMS = ['tag', 'linkCode', 'linkId', 'creative', 'creativeASIN', 'ascsubtag', 'ref_', 'ref'];
 
 interface ReleasesFile {
   lastUpdated: string;
@@ -22,6 +25,30 @@ function loadExisting(): ReleasesFile | null {
     return JSON.parse(readFileSync(OUTPUT_PATH, 'utf-8')) as ReleasesFile;
   } catch {
     return null;
+  }
+}
+
+function cleanAmazonUrl(rawUrl: string): string {
+  try {
+    const u = new URL(rawUrl);
+    if (!u.hostname.includes('amazon.')) return rawUrl;
+    for (const p of AFFILIATE_PARAMS) u.searchParams.delete(p);
+    u.pathname = u.pathname.replace(/\/ref=[^/]*/g, '');
+    return u.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
+async function resolveBlurayClick(url: string): Promise<string> {
+  if (!url.includes('blu-ray.com/link/click.php')) return url;
+  try {
+    const res = await fetch(url, { redirect: 'manual' });
+    const location = res.headers.get('location');
+    if (!location || !/amazon\./i.test(location)) return url;
+    return cleanAmazonUrl(location);
+  } catch {
+    return url;
   }
 }
 
@@ -64,6 +91,43 @@ async function main() {
       r.addedAt = prev.addedAt;
       r.trailerYoutubeId = prev.trailerYoutubeId;
     }
+  }
+
+  // Resolve blu-ray.com Amazon affiliate redirects to direct, untagged Amazon URLs.
+  // Only retailers explicitly named "Amazon" are touched; Pre-order and others stay.
+  // Reuse already-resolved URLs from the previous JSON when a release's Amazon
+  // retailer was previously cleaned (avoids hammering blu-ray.com on every run).
+  const amazonTasks: Array<{ retailer: { url: string } }> = [];
+  for (const r of fresh) {
+    const prev = oldById.get(r.id);
+    const prevAmazon = prev?.retailers.find(x => x.name === 'Amazon' && !x.url.includes('click.php'));
+    for (const ret of r.retailers) {
+      if (ret.name !== 'Amazon') continue;
+      if (!ret.url.includes('click.php')) continue;
+      if (prevAmazon) {
+        ret.url = prevAmazon.url;
+        continue;
+      }
+      amazonTasks.push({ retailer: ret });
+    }
+  }
+  if (amazonTasks.length > 0) {
+    console.log(`[scrape] Resolving ${amazonTasks.length} Amazon affiliate links...`);
+    let cleaned = 0;
+    for (let i = 0; i < amazonTasks.length; i += AMAZON_BATCH_SIZE) {
+      const batch = amazonTasks.slice(i, i + AMAZON_BATCH_SIZE);
+      const newUrls = await Promise.all(batch.map(t => resolveBlurayClick(t.retailer.url)));
+      for (let j = 0; j < batch.length; j++) {
+        if (newUrls[j] !== batch[j].retailer.url) {
+          batch[j].retailer.url = newUrls[j];
+          cleaned++;
+        }
+      }
+      if (i + AMAZON_BATCH_SIZE < amazonTasks.length) {
+        await new Promise(resolve => setTimeout(resolve, AMAZON_BATCH_DELAY_MS));
+      }
+    }
+    console.log(`[scrape] Cleaned ${cleaned}/${amazonTasks.length} Amazon URLs`);
   }
 
   // Fill in missing trailers from TMDB. Only hits the API for releases we
