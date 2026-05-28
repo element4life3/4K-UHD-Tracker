@@ -6,6 +6,7 @@ import StatusBadge from './StatusBadge';
 import RetailerList from './RetailerList';
 import DiscDetails from './DiscDetails';
 import TrailerModal from './TrailerModal';
+import { formatReleaseDate } from '@/lib/dates';
 
 interface ReleaseRowProps {
   release: Release;
@@ -42,11 +43,7 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
   const [imgError, setImgError] = useState(false);
   const [showTrailer, setShowTrailer] = useState(false);
 
-  const formattedDate = new Date(release.releaseDate).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  const formattedDate = formatReleaseDate(release.releaseDate);
   const formattedAddedDate = new Date(release.addedAt).toLocaleDateString('en-US', {
     year: 'numeric',
     month: 'short',

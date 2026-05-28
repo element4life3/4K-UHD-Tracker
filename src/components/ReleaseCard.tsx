@@ -6,6 +6,7 @@ import StatusBadge from './StatusBadge';
 import RetailerList from './RetailerList';
 import DiscDetails from './DiscDetails';
 import TrailerModal from './TrailerModal';
+import { formatReleaseDate } from '@/lib/dates';
 
 function CoverPlaceholder({ title }: { title: string }) {
   return (
@@ -26,11 +27,7 @@ export default function ReleaseCard({ release }: { release: Release }) {
   const [showTrailer, setShowTrailer] = useState(false);
   const [imgError, setImgError] = useState(false);
 
-  const formattedDate = new Date(release.releaseDate).toLocaleDateString('en-US', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-  });
+  const formattedDate = formatReleaseDate(release.releaseDate);
 
   const editionColors: Record<string, string> = {
     'SteelBook': 'bg-sky-500/20 text-sky-400 border-sky-500/30',

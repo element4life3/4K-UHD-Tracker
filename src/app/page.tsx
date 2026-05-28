@@ -6,6 +6,7 @@ import ReleaseCard from '@/components/ReleaseCard';
 import ReleaseRow from '@/components/ReleaseRow';
 import SkeletonCard from '@/components/SkeletonCard';
 import FilterBar from '@/components/FilterBar';
+import { parseReleaseDate } from '@/lib/dates';
 
 export default function Home() {
   const [releases, setReleases] = useState<Release[]>([]);
@@ -76,8 +77,7 @@ export default function Home() {
   function computeStatus(releaseDate: string): Release['status'] {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const rel = new Date(releaseDate);
-    const relDay = new Date(rel.getFullYear(), rel.getMonth(), rel.getDate());
+    const relDay = parseReleaseDate(releaseDate);
     const diffDays = Math.ceil((relDay.getTime() - today.getTime()) / 86400000);
     if (diffDays <= 0) return 'out-now';
     if (diffDays <= 7) return 'this-week';
