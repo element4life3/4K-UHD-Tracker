@@ -251,6 +251,7 @@ export default function Home() {
               <div className="inline-flex h-9 rounded-lg border border-[#1e2030] bg-[#12131a] p-1">
                 <button
                   onClick={() => handleViewChange('card')}
+                  title="Card View"
                   aria-label="Card view"
                   aria-pressed={view === 'card'}
                   className={`flex items-center justify-center w-10 rounded-md transition-all cursor-pointer ${
@@ -266,6 +267,7 @@ export default function Home() {
                 </button>
                 <button
                   onClick={() => handleViewChange('list')}
+                  title="List View"
                   aria-label="List view"
                   aria-pressed={view === 'list'}
                   className={`flex items-center justify-center w-10 rounded-md transition-all cursor-pointer ${
