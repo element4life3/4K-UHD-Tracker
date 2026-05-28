@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { Release } from '@/lib/types';
-import StatusBadge from './StatusBadge';
+import StatusBadge, { statusConfig } from './StatusBadge';
 import RetailerList from './RetailerList';
 import DiscDetails from './DiscDetails';
 import TrailerModal from './TrailerModal';
@@ -20,13 +20,6 @@ const editionColors: Record<string, string> = {
   "Collector's": 'bg-rose-500/20 text-rose-400 border-rose-500/30',
   'Special Edition': 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   'Standard': 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-};
-
-const statusInline: Record<string, { label: string; classes: string }> = {
-  'out-now':     { label: 'Out Now',     classes: 'bg-green-500/20 text-green-400 border-green-500/30' },
-  'this-week':   { label: 'This Week',   classes: 'bg-amber-500/20 text-amber-400 border-amber-500/30' },
-  'coming-soon': { label: 'Coming Soon', classes: 'bg-blue-500/20 text-blue-400 border-blue-500/30' },
-  'upcoming':    { label: 'Upcoming',    classes: 'bg-purple-500/20 text-purple-400 border-purple-500/30' },
 };
 
 function CoverPlaceholder({ className }: { className?: string }) {
@@ -103,8 +96,8 @@ export default function ReleaseRow({ release, expanded, onToggle }: ReleaseRowPr
               {/* Mobile-only badges above the meta line (only when expanded) */}
               {expanded && (
                 <div className="sm:hidden mt-1.5 flex items-center gap-1.5">
-                  <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs leading-none whitespace-nowrap ${statusInline[release.status]?.classes ?? ''}`}>
-                    {statusInline[release.status]?.label ?? release.status}
+                  <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs leading-none whitespace-nowrap ${statusConfig[release.status].classes}`}>
+                    {statusConfig[release.status].label}
                   </span>
                   <span className={`font-semibold px-2 py-0.5 rounded-full border text-xs leading-none whitespace-nowrap ${editionColors[release.edition] || editionColors['Standard']}`}>
                     {release.edition}
