@@ -206,7 +206,7 @@ export default function Home() {
                 <h1 className="font-display text-2xl sm:text-3xl text-white tracking-wide">
                   4K UHD TRACKER
                 </h1>
-                <p className="text-xs text-gray-500">Upcoming Blu-ray Releases</p>
+                <p className="text-xs text-gray-500">Upcoming 4K Blu-ray Releases</p>
               </div>
             </div>
 
