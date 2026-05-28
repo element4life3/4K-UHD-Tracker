@@ -10,6 +10,9 @@ const TMDB_BATCH_DELAY_MS = 250;
 const AMAZON_BATCH_SIZE = 5;
 const AMAZON_BATCH_DELAY_MS = 800;
 const AFFILIATE_PARAMS = ['tag', 'linkCode', 'linkId', 'creative', 'creativeASIN', 'ascsubtag', 'ref_', 'ref'];
+// Retailer names whose blu-ray.com click.php links redirect to affiliate-tagged
+// Amazon URLs. "Pre-order" is just an Amazon buy-link that had no visible price.
+const AFFILIATE_RETAILERS = ['Amazon', 'Pre-order'];
 
 interface ReleasesFile {
   lastUpdated: string;
@@ -94,18 +97,19 @@ async function main() {
   }
 
   // Resolve blu-ray.com Amazon affiliate redirects to direct, untagged Amazon URLs.
-  // Only retailers explicitly named "Amazon" are touched; Pre-order and others stay.
-  // Reuse already-resolved URLs from the previous JSON when a release's Amazon
-  // retailer was previously cleaned (avoids hammering blu-ray.com on every run).
+  // Both "Amazon" and "Pre-order" buy links redirect to affiliate-tagged Amazon
+  // pages, so both are cleaned. Reuse already-resolved URLs from the previous JSON
+  // when a release's retailer was previously cleaned (avoids hammering blu-ray.com
+  // on every run).
   const amazonTasks: Array<{ retailer: { url: string } }> = [];
   for (const r of fresh) {
     const prev = oldById.get(r.id);
-    const prevAmazon = prev?.retailers.find(x => x.name === 'Amazon' && !x.url.includes('click.php'));
     for (const ret of r.retailers) {
-      if (ret.name !== 'Amazon') continue;
+      if (!AFFILIATE_RETAILERS.includes(ret.name)) continue;
       if (!ret.url.includes('click.php')) continue;
-      if (prevAmazon) {
-        ret.url = prevAmazon.url;
+      const prevCleaned = prev?.retailers.find(x => x.name === ret.name && !x.url.includes('click.php'));
+      if (prevCleaned) {
+        ret.url = prevCleaned.url;
         continue;
       }
       amazonTasks.push({ retailer: ret });
