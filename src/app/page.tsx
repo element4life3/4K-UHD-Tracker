@@ -78,18 +78,21 @@ export default function Home() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const relDay = parseReleaseDate(releaseDate);
-    if (relDay.getTime() <= today.getTime()) return 'out-now';
 
-    // Buckets follow calendar weeks (Sun–Sat), not a rolling 7-day window, so a
-    // release only counts as "this week" once we're actually in its week. Discs
-    // drop on Tuesdays, so next Tuesday reads as "Coming Soon" until the new week
-    // begins on Sunday, at which point it flips to "This Week".
-    // getDay(): 0=Sun … 6=Sat, so (6 - getDay()) days remain until this week's Saturday.
-    const endOfThisWeek = new Date(today);
-    endOfThisWeek.setDate(today.getDate() + (6 - today.getDay()));
+    // Buckets follow calendar weeks (Sun–Sat), not a rolling 7-day window. A
+    // release stays in "This Week" for the whole of its calendar week — so a
+    // Tuesday drop still shows all the way through Saturday — then rolls to "Out
+    // Now" when the next week begins on Sunday. Likewise next week's releases only
+    // become "This Week" once that Sunday arrives.
+    // getDay(): 0=Sun … 6=Sat, so today - getDay() is this week's Sunday.
+    const startOfThisWeek = new Date(today);
+    startOfThisWeek.setDate(today.getDate() - today.getDay());
+    const endOfThisWeek = new Date(startOfThisWeek);
+    endOfThisWeek.setDate(startOfThisWeek.getDate() + 6);
     const endOfNextWeek = new Date(endOfThisWeek);
     endOfNextWeek.setDate(endOfThisWeek.getDate() + 7);
 
+    if (relDay.getTime() < startOfThisWeek.getTime()) return 'out-now';
     if (relDay.getTime() <= endOfThisWeek.getTime()) return 'this-week';
     if (relDay.getTime() <= endOfNextWeek.getTime()) return 'coming-soon';
     return 'upcoming';
