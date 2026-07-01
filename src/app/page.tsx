@@ -6,7 +6,7 @@ import ReleaseCard from '@/components/ReleaseCard';
 import ReleaseRow from '@/components/ReleaseRow';
 import SkeletonCard from '@/components/SkeletonCard';
 import FilterBar from '@/components/FilterBar';
-import { parseReleaseDate } from '@/lib/dates';
+import { parseReleaseDate, startOfWeek, toDateStr } from '@/lib/dates';
 
 export default function Home() {
   const [releases, setReleases] = useState<Release[]>([]);
@@ -75,8 +75,6 @@ export default function Home() {
   }
 
   function computeStatus(releaseDate: string): Release['status'] {
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const relDay = parseReleaseDate(releaseDate);
 
     // Buckets follow calendar weeks (Sun–Sat), not a rolling 7-day window. A
@@ -84,9 +82,7 @@ export default function Home() {
     // Tuesday drop still shows all the way through Saturday — then rolls to "Out
     // Now" when the next week begins on Sunday. Likewise next week's releases only
     // become "This Week" once that Sunday arrives.
-    // getDay(): 0=Sun … 6=Sat, so today - getDay() is this week's Sunday.
-    const startOfThisWeek = new Date(today);
-    startOfThisWeek.setDate(today.getDate() - today.getDay());
+    const startOfThisWeek = startOfWeek(new Date());
     const endOfThisWeek = new Date(startOfThisWeek);
     endOfThisWeek.setDate(startOfThisWeek.getDate() + 6);
     const endOfNextWeek = new Date(endOfThisWeek);
@@ -138,8 +134,11 @@ export default function Home() {
     }
 
     if (filter === 'all-upcoming') {
-      const today = new Date().toISOString().split('T')[0];
-      result = result.filter(r => r.releaseDate >= today);
+      // Start from the beginning of the current week so this week's releases
+      // (including ones that already dropped, e.g. a Tuesday) show alongside all
+      // upcoming ones — the same window "This Week" and later buckets cover.
+      const weekStart = toDateStr(startOfWeek(new Date()));
+      result = result.filter(r => r.releaseDate >= weekStart);
     } else if (filter === 'newly-added') {
       result = result.filter(r => recentlyAddedIds.has(r.id));
     } else if (filter !== 'all') {

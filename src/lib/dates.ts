@@ -15,3 +15,20 @@ export function formatReleaseDate(dateStr: string): string {
     day: 'numeric',
   });
 }
+
+// Sunday (local midnight) of the calendar week containing `date`.
+// getDay(): 0=Sun … 6=Sat, so subtracting getDay() lands on that week's Sunday.
+export function startOfWeek(date: Date): Date {
+  const d = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+  d.setDate(d.getDate() - d.getDay());
+  return d;
+}
+
+// Local calendar date as "YYYY-MM-DD" — matches how releaseDate is stored, so it
+// can be string-compared against release dates without any timezone drift.
+export function toDateStr(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
