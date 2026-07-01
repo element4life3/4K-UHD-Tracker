@@ -78,10 +78,20 @@ export default function Home() {
     const now = new Date();
     const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
     const relDay = parseReleaseDate(releaseDate);
-    const diffDays = Math.ceil((relDay.getTime() - today.getTime()) / 86400000);
-    if (diffDays <= 0) return 'out-now';
-    if (diffDays <= 7) return 'this-week';
-    if (diffDays <= 14) return 'coming-soon';
+    if (relDay.getTime() <= today.getTime()) return 'out-now';
+
+    // Buckets follow calendar weeks (Sun–Sat), not a rolling 7-day window, so a
+    // release only counts as "this week" once we're actually in its week. Discs
+    // drop on Tuesdays, so next Tuesday reads as "Coming Soon" until the new week
+    // begins on Sunday, at which point it flips to "This Week".
+    // getDay(): 0=Sun … 6=Sat, so (6 - getDay()) days remain until this week's Saturday.
+    const endOfThisWeek = new Date(today);
+    endOfThisWeek.setDate(today.getDate() + (6 - today.getDay()));
+    const endOfNextWeek = new Date(endOfThisWeek);
+    endOfNextWeek.setDate(endOfThisWeek.getDate() + 7);
+
+    if (relDay.getTime() <= endOfThisWeek.getTime()) return 'this-week';
+    if (relDay.getTime() <= endOfNextWeek.getTime()) return 'coming-soon';
     return 'upcoming';
   }
 
