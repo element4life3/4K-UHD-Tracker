@@ -1,0 +1,37 @@
+name: Copy to GitLab
+
+# Keeps gitlab.com/m.a.konieczki/4K-UHD-Tracker in step with this repo. Runs on every push, and
+# after each daily scrape too: the scrape's own commit doesn't count as a push for other workflows.
+on:
+  push:
+  workflow_run:
+    workflows: ['Daily scrape']
+    types: [completed]
+  workflow_dispatch:
+
+concurrency:
+  group: mirror-gitlab
+  cancel-in-progress: false
+
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # After a scrape, the newest main rather than the commit the scrape started from.
+          ref: ${{ github.event_name == 'push' && github.ref || 'main' }}
+
+      - name: Push to GitLab
+        env:
+          # A GitLab personal access token with only the write_repository scope.
+          GITLAB_TOKEN: ${{ secrets.GITLAB_TOKEN }}
+          BRANCH: ${{ github.event_name == 'push' && github.ref_name || 'main' }}
+        run: |
+          if [ -z "$GITLAB_TOKEN" ]; then
+            echo "No GITLAB_TOKEN secret set; skipping"
+            exit 0
+          fi
+          git push "https://oauth2:${GITLAB_TOKEN}@gitlab.com/m.a.konieczki/4K-UHD-Tracker.git" "HEAD:refs/heads/$BRANCH" --tags
